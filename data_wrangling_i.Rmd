@@ -1,5 +1,178 @@
 ---
 title: "data_wrangling_i"
-output: html_document
+output: github_document
 ---
+```{r}
+library(tidyverse)
+```
+
+```{r}
+library(here)
+here("data", "file_i_want.csv")
+```
+
+'getwd()' means get working directory.
+"setwd()' means get absolute directory.
+
+| Symbol | Meaning | Example from this working directory |
+|---|---|---|
+| `~` | your home directory | `/Users/yan` |
+| `.` | current working directory | `/Users/yan/Desktop/p8105_project` |
+| `..` | one folder up | `/Users/yan/Desktop` |
+| `../..` | two folders up | `/Users/yan` |
+
+```{r}
+litters_df = read_csv(file = "./data_import_examples/FAS_litters.csv")
+```
+```{r}
+names(litters_df)
+litters_df = janitor::clean_names(litters_df)
+# janitor::clean_names can help to unify the format column names
+names(litters_df)
+```
+```{r}
+library(conflicted)
+filter(group == "con7")
+```
+
+can help to remind the conflict in r package, 
+eg: you use 'filter' during the code, then it will alert:
+
+stats::filter / dplyr::filter
+
+# Looking at data
+```{r}
+view(litters_df)
+str(litters_df)
+head(litters_df,5)
+tail(litters_df,5)
+litters_df
+```
+
+More neat than useful
+```{r}
+skimr::skim(litters_df)
+```
+
+If your file is not standard or it is messy, you can use 'read_*' to read the file with parameters setting to tell R how to read.
+
+## Col_names:
+
+col_names = TRUE means treating first raw as column names.
+
+col_names = FALSE means treating first raw as regular data, then it will generate column name, like x1, x2,...  for the data set.
+
+# skip:
+number of rows to skip before reading data.
+
+```{r}
+litters_df = 
+    read_csv(file = "./data_import_examples/FAS_litters.csv",
+    skip = 10, col_names = FALSE)
+head(litters_df)
+```
+
+## na: 
+
+It tells r which symbol represent missing value
+eg: "."," ","na","NA","0",etc.
+
+```{r}
+litters_df = 
+    read_csv(
+        file = "./data_import_examples/FAS_litters.csv",
+        na = c(".", "NA", ""))
+head(litters_df)
+```
+
+```{r}
+litters_df = 
+    read_csv(file = "./data_import_examples/FAS_litters.csv",
+        na = c(".", "NA", ""),
+    col_types = cols(
+      Group = col_character(),
+      `Litter Number` = col_character(),
+      `GD0 weight` = col_double(),
+      `GD18 weight` = col_double(),
+      `GD of Birth` = col_integer(),
+      `Pups born alive` = col_integer(),
+      `Pups dead @ birth` = col_integer(),
+      `Pups survive` = col_integer()
+    )
+  )
+
+tail(litters_df)
+```
+Note that you don’t have to specify the variable type for every column, and can only focus on ones that are difficult:
+
+```{r}
+litters_df = 
+    read_csv(file = "./data_import_examples/FAS_litters.csv",
+        na = c(".", "NA", ""),
+    col_types = cols(
+      Group = col_factor()
+    )
+)
+
+head(litters_df)
+```
+
+# Learning Assessment:
+```{r}
+pups_df = read_csv(file = "./data_import_examples/Fas_pups.csv",
+          skip = 3, 
+          na = c(".","NA"),
+          col_types = "fdddddd")
+# names(pups_df)
+skimr::skim(pups_df)
+```
+# import excel
+
+```{r}
+library(readxl)
+
+mlb11_df = read_excel("./data_import_examples/mlb11.xlsx", n_max = 20)
+
+head(mlb11_df, 5)
+```
+
+# import SAS
+
+```{r}
+library(haven)
+
+pulse_df = read_sas("./data_import_examples/public_pulse_data.sas7bdat")
+
+head(pulse_df, 5)
+```
+
+Learning Assessment: 
+```{r}
+library(readr)
+pups_base = read_csv("./data_import_examples/FAS_pups.csv", skip = 3)
+pups_readr = read.csv("./data_import_examples/FAS_pups.csv", skip = 3)
+# read_csv() numeric columns → often shown as <dbl>
+# read.csv() numeric columns → may be stored as <int> if all values are integers
+View(pups_base)
+View(pups_readr)
+
+pups_base
+pups_readr
+
+pups_base$S
+pups_readr$S
+```
+Why pups_readr$S can return Sex column:
+
+Because tibbles created by read_csv() allow partial matching behavior in $ lookup in this context.
+
+Base R 'read.csv()' automatically converts non-syntactic names by default:
+Litter Number → Litter.Number
+PD ears       → PD.ears
+
+whereas 'read_csv()' preserves the original names.
+Litter Number
+PD ears
+
+*prefer read_csv*
 
