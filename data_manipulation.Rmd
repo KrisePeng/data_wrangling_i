@@ -7,9 +7,194 @@ output: github_document
 library(tidyverse)
 litters_df = read_csv("./data_import_examples/FAS_litters.csv",
                       na = c("NA","."," "))
-pups_df = read_csv("./data_import_examples/FAS_litters.csv",
+litters_df = janitor::clean_names(litters_df)
+pups_df = read_csv("./data_import_examples/FAS_pups.csv",
                    skip = 3,
                    na = c("NA","."))
-
+pups_df = janitor::clean_names(pups_df)
+names(pups_df)
 ```
+# Select
+
+You can specify the columns you want to keep by naming all of them:
+```{r}
+select(litters_df, group, litter_number, gd0_weight, pups_born_alive)
+```
+
+You can specify the specify a range of columns to keep:
+```{r}
+select(litters_df, group:gd_of_birth)
+```
+
+You can also specify columns you’d like to remove:
+```{r}
+select(litters_df, -pups_survive)
+```
+
+You can rename variables as part of this process:
+```{r}
+select(litters_df, GROUP = group, LiTtEr_NuMbEr = litter_number)
+```
+
+If all you want to do is rename something, you can use rename instead of select. This will rename the variables you care about, and keep everything else:
+```{r}
+rename(litters_df, GROUP = group, LiTtEr_NuMbEr = litter_number)
+```
+
+everything(), which is handy for reorganizing columns without discarding anything:
+
+```{r}
+select(litters_df, litter_number, pups_survive, everything())
+# put litter_number and pups_survive in first two columns, and then keep all the other columns in their original order  without repeating.
+```
+
+'relocate' does a similar thing (and is sort of like rename in that it’s handy but not critical):
+
+if your only goal is reordering columns, relocate() is more direct.
+
+```{r}
+relocate(litters_df, litter_number, pups_survive)
+
+# You can also move columns somewhere else, for example:
+relocate(litters_df, pups_survive, .after = litter_number)
+# means:
+# move pups_survive to immediately after litter_number.
+```
+
+## Learning Assessment:
+```{r}
+select(pups_df, litter_number,sex,pd_ears)
+```
+
+# Filter
+```{r}
+pups_df <- pups_df%>%
+  dplyr::filter(
+    sex == 1
+)
+dplyr::filter(pups_df, sex == 1)
+dplyr::filter(pups_df, sex == 2, pd_walk < 11)
+```
+
+# Mutate
+Sometimes you need to select columns; sometimes you need to change them or create new ones. You can do this using mutate.
+```{r}
+mutate(litters_df,
+  wt_gain = gd18_weight - gd0_weight,
+  group = str_to_lower(group)
+)
+```
+
+
+## Learning Assessment
+```{r}
+mutate(pups_df,
+  pd_pivote_minus_7 = pd_pivot - 7,
+  pd_sum = pd_ears + pd_eyes + pd_pivot + pd_walk
+)
+```
+
+# Arrange
+'arrange(litters_df, group, pups_born_alive)'
+means sort litters_df first by group, and then within each group, sort by pups_born_alive.
+```{r}
+head(arrange(litters_df, group, pups_born_alive), 10)
+```
+
+
+# |>
+
+The following is an example of the first option:
+```{r}
+litters_df_raw = 
+    read_csv("./data_import_examples/FAS_litters.csv", na = c("NA", ".", ""))
+
+litters_df_clean_names = janitor::clean_names(litters_df_raw)
+litters_df_selected_cols = select(litters_df_clean_names, -pups_survive)
+litters_df_with_vars = 
+  mutate(
+    litters_df_selected_cols, 
+    wt_gain = gd18_weight - gd0_weight,
+    group = str_to_lower(group))
+litters_df_with_vars_without_missing = 
+  drop_na(litters_df_with_vars, wt_gain)
+litters_df_with_vars_without_missing
+```
+
+Below, we try the second option:
+```{r}
+litters_df_clean = 
+  drop_na(
+    mutate(
+      select(
+        janitor::clean_names(
+          read_csv("./data_import_examples/FAS_litters.csv", na = c("NA", ".", ""))
+          ), 
+      -pups_survive
+      ),
+    wt_gain = gd18_weight - gd0_weight,
+    group = str_to_lower(group)
+    ),
+  wt_gain
+  )
+litters_df_clean
+```
+
+These are both *confusing and bad*: the first gets confusing and clutters our workspace, and the second has to be read inside out.
+```{r}
+litters_df = 
+  read_csv("./data_import_examples/FAS_litters.csv", na = c("NA", ".", "")) |> 
+  janitor::clean_names() |> 
+  select(-pups_survive) |> 
+  mutate(
+    wt_gain = gd18_weight - gd0_weight,
+    group = str_to_lower(group)) |> 
+  drop_na(wt_gain)
+litters_df
+```
+
+In the majority of cases (and everywhere in the tidyverse) you can trust that the first argument is the right one and be happy with life, but there are some cases where what you’re piping isn’t going into the first argument. Here, using the placeholder _ is necessary to indicate where the object being piped should go. For example, to regress wt_gain on pups_born_alive, you might use:
+```{r}
+litters_df |>
+  lm(wt_gain ~ pups_born_alive, data = _) |>
+  broom::tidy()
+```
+For here |> always put pipe thing  in first argument.
+eg:
+'litters_df |>
+  head()'
+equal to 
+  'head(litters_df)'
+
+but for lm(), the first argument isn't data, but the formula.
+Thus, if we use |> here, it will become thing like:
+'lm(litters_df, wt_gain ~ pups_born_alive)'
+
+The thing we want is 
+```{r}
+lm(
+  wt_gain ~ pups_born_alive,
+  data = litters_df
+)
+```
+
+Then use placeholder, it will become
+```{r}
+litters_df |>
+  lm(wt_gain ~ pups_born_alive, data = _)
+```
+
+## Learning Assesment
+```{r}
+pups_df = 
+  read_csv("./data_import_examples/FAS_pups.csv",
+           skip = 3,
+           na = c("NA"," ","."))|>
+  janitor::clean_names()|>
+  dplyr::filter(sex == 1) |>
+  select(-pd_ears)|>
+  mutate(pd_pivot_gt7 = pd_pivot>=7)
+pups_df
+```
+
 
