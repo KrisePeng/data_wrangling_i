@@ -1,0 +1,15 @@
+---
+title: "data_manipulation"
+output: github_document
+---
+
+```{r}
+library(tidyverse)
+litters_df = read_csv("./data_import_examples/FAS_litters.csv",
+                      na = c("NA","."," "))
+pups_df = read_csv("./data_import_examples/FAS_litters.csv",
+                   skip = 3,
+                   na = c("NA","."))
+
+```
+
